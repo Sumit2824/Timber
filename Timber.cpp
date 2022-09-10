@@ -1,7 +1,7 @@
 // Include important libraries
 #include <sstream>
 #include <SFML/Graphics.hpp>
-
+#include <SFML/Audio.hpp>
 // Make code easier to type using namespace
 using namespace sf;
 
@@ -210,13 +210,26 @@ int main()
 
     //some other log related variable
 
-    bool logActibve = false;
+    bool logActive = false;
     float logSpeedX = 1000;
     float logSpeedY = -1500;
 
     //control player input
     bool acceptInput = false;
 
+    //prepare the sound
+    SoundBuffer chopBuffer;
+    chopBuffer.loadFromFile("sound/chop.wav");
+    Sound chop;
+    chop.setBuffer(chopBuffer);
+    SoundBuffer deathBuffer;
+    deathBuffer.loadFromFile("sound/death.wav");
+    Sound death;
+    death.setBuffer(deathBuffer);
+    SoundBuffer outBuffer;
+    outBuffer.loadFromFile("sound/out_of_time.wav");
+    Sound outOfTime;
+    outOfTime.setBuffer(outBuffer);
 
     while (window.isOpen())
 
@@ -301,8 +314,11 @@ int main()
 
                 spriteLog.setPosition(810, 720);
                 logSpeedX = -5000;
-                logActibve = true;
+                logActive = true;
                 acceptInput = false;
+
+                //play chop sounfd
+                chop.play();
             }
 
             //handle left cursor key
@@ -326,8 +342,11 @@ int main()
 
                 spriteLog.setPosition(810, 720);
                 logSpeedX = 5000;
-                logActibve = true;
+                logActive = true;
                 acceptInput = false;
+
+                //play chop sounfd
+                chop.play();
             }
         }
 
@@ -392,6 +411,9 @@ int main()
                     FloatRect textRect = messageText.getLocalBounds();
                     messageText.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
                     messageText.setPosition(1920 / 2.0f, 1080 / 2.0f);
+
+                    //play out of time sound
+                    outOfTime.play();
                 }
 
                 //Setup bee
@@ -533,6 +555,48 @@ int main()
                         branches[i].setPosition(3000, height);
                     }
                 }
+
+                //handle flying log
+
+                if (logActive)
+                {
+                    spriteLog.setPosition(spriteLog.getPosition().x + (logSpeedX * dt.asSeconds()), spriteLog.getPosition().y + logSpeedY * dt.asSeconds());
+
+                    //has log reached to the right hand edge?
+
+                    if (spriteLog.getPosition().x < -100 || spriteLog.getPosition().x > 2000)
+                    {
+                        // set it up ready to be a whole new log next frame
+                        logActive = false;
+                        spriteLog.setPosition(810, 720);
+                    }
+                }
+                // has player been squished by a branch
+
+                if (branchPositions[5] == playerSide)
+                {
+                    //death
+                    paused = true;
+                    acceptInput = false;
+
+                    //draw gravestone
+                    spriteRIP.setPosition(spritePlayer.getPosition().x, 760);
+
+                    //hide player
+                    spritePlayer.setPosition(2000, 660);
+
+                    //change text message
+                    messageText.setString("SQUISHED!!");
+
+                    //create it on the screen
+                    FloatRect textRect = messageText.getLocalBounds();
+                    messageText.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+                    messageText.setPosition(1920 / 2.0f, 1080 / 2.0f);
+
+                    //play death sound
+                    death.play();
+                }
+
             }//end if paused
 
             /*
